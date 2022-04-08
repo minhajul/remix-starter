@@ -10,6 +10,9 @@
     "dev": "concurrently \"npm run dev:css\" \"remix dev\"",
     "dev:css": "tailwindcss -w -i ./styles/app.css -o app/styles/app.css"
   },
+  "prisma": {
+    "seed": "ts-node ./prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^3.12.0",
     "@remix-run/node": "^1.3.5",
@@ -33,6 +36,7 @@
     "postcss": "^8.4.12",
     "prisma": "^3.12.0",
     "tailwindcss": "^3.0.23",
+    "ts-node": "^10.7.0",
     "typescript": "^4.5.5"
   },
   "engines": {
