@@ -10,7 +10,16 @@ type LoaderData = { tasks: Array<Task> };
 
 export const loader: LoaderFunction = async () => {
     const data: LoaderData = {
-        tasks: await db.task.findMany(),
+        tasks: await db.task.findMany({
+            orderBy: [
+                {
+                    is_completed: 'asc',
+                },
+                {
+                    created_at: 'desc',
+                },
+            ]
+        }),
     };
     return json(data);
 };
@@ -25,6 +34,42 @@ export let action: ActionFunction = async ({ request }) => {
         return json(newTask, {
             status: 201,
         })
+    }
+
+    if (request.method === 'DELETE') {
+        const data = new URLSearchParams(await request.text())
+        const taskId = data.get('task_id')
+
+        if (!taskId)
+            return json(
+                { error: 'Task id must be defined' },
+                {
+                    status: 400,
+                }
+            )
+
+        const task = await db.task.findUnique({
+            where: {
+                id: taskId,
+            },
+        })
+
+        if (!task) {
+            return json(
+                { error: 'Task does not exist' },
+                {
+                    status: 400,
+                }
+            )
+        }
+
+        const deletedTask = await db.task.delete({
+            where: {
+                id: task.id,
+            },
+        })
+
+        return json({ todo: deletedTask }, { status: 200 })
     }
 
     return null
@@ -43,7 +88,7 @@ export default function Index() {
     }, [transition.state])
 
     return (
-        <div className="bg-white">
+        <div className="bg-gray-900 min-h-screen">
             <div className="relative overflow-hidden">
                 <header className="relative">
                     <div className="bg-gray-900 pt-6">
@@ -69,8 +114,8 @@ export default function Index() {
 
                 <main>
                     <div className="pt-10 bg-gray-900 sm:pt-16 lg:pt-8 lg:pb-14 lg:overflow-hidden">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                            <div className="mb-4">
+                        <div className="max-w-2xl mx-auto flex justify-center px-4 sm:px-6">
+                            <div className="py-5">
                                 <h2 className="text-2xl text-white">
                                     Tasks
                                 </h2>
@@ -82,28 +127,35 @@ export default function Index() {
                                         </div>
                                     </Form>
                                 </div>
-                            </div>
-                            <div>
-                                {data.tasks.map((task) => (
-                                    <div key={task.id} className="flex mb-4 items-center">
-                                        <p className="text-white">{task.title}</p>
-                                        <button className="flex-no-shrink p-2 ml-4 mr-2 bg-blue-500 rounded text-white">Done</button>
-                                        <button className="flex-no-shrink p-2 ml-2 rounded bg-red-500">Remove</button>
-                                    </div>
-                                ))}
+
+                                {/*{data.tasks.map((task) => (*/}
+                                {/*    <div key={task.id} className="flex mb-4 items-center">*/}
+                                {/*        <p className="text-white">{task.title}</p>*/}
+                                {/*        <button className="flex-no-shrink p-2 ml-4 mr-2 bg-blue-500 rounded text-white">Done</button>*/}
+                                {/*        <Form method="delete">*/}
+                                {/*            <input hidden name="task_id" defaultValue={task.id} />*/}
+                                {/*            <button className="flex-no-shrink p-2 ml-2 rounded bg-red-500">Remove</button>*/}
+                                {/*        </Form>*/}
+                                {/*    </div>*/}
+                                {/*))}*/}
+
+                                <fieldset className="space-y-5 pt-4">
+                                    {data.tasks.map((task) => (
+                                        <div key={task.id} className="relative flex items-start">
+                                            <div className="flex items-center h-5 mt-1">
+                                                <input id="comments" aria-describedby="comments-description" name="comments" type="checkbox" className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"/>
+                                            </div>
+                                            <div className="ml-3 text-xl">
+                                                <span id="comments-description" className={`text-white text-base ${task.is_completed == true ? 'line-through' : ''}`}>{task.title} </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </fieldset>
+
                             </div>
                         </div>
                     </div>
                 </main>
-
-                <footer className="bg-gray-50" aria-labelledby="footer-heading">
-                    <h2 id="footer-heading" className="sr-only">Footer</h2>
-                    <div className="max-w-md mx-auto px-4 sm:max-w-7xl sm:px-6 lg:px-8">
-                        <div className="border-t border-gray-200 py-8">
-                            <p className="text-base text-gray-400 xl:text-center">&copy; 2022 Remix Starter. All rights reserved.</p>
-                        </div>
-                    </div>
-                </footer>
             </div>
         </div>
     );
