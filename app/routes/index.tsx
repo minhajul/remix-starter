@@ -1,6 +1,6 @@
 import type { LoaderFunction, ActionFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, Form, useTransition } from "@remix-run/react";
+import { useLoaderData, Form, useSubmit, useTransition } from "@remix-run/react";
 import type { Task } from "@prisma/client";
 import { useRef, useEffect } from 'react'
 
@@ -34,6 +34,43 @@ export let action: ActionFunction = async ({ request }) => {
         return json(newTask, {
             status: 201,
         })
+    }
+
+    if (request.method === 'PUT') {
+        console.log('mmmm')
+        const data = new URLSearchParams(await request.text())
+        const taskId = data.get('task_id')
+        if (!taskId)
+            return json(
+                { error: 'Task id must be defined' },
+                {
+                    status: 400,
+                }
+            )
+        const task = await db.task.findUnique({
+            where: {
+                id: taskId,
+            },
+        })
+
+        if (!task) {
+            return json(
+                { error: 'Task does not exist' },
+                {
+                    status: 400,
+                }
+            )
+        }
+
+        const updatedTask = await db.task.update({
+            where: {
+                id: task.id,
+            },
+            data: {
+                is_completed: !task.is_completed,
+            },
+        })
+        return json({ todo: updatedTask }, { status: 200 })
     }
 
     if (request.method === 'DELETE') {
@@ -80,12 +117,18 @@ export default function Index() {
 
     let formRef = useRef<HTMLFormElement | null>(null)
     const transition = useTransition()
+    const submit = useSubmit();
 
     useEffect(() => {
         if (transition.state === 'loading') {
             formRef.current?.reset()
         }
     }, [transition.state])
+
+    function handleChange(event) {
+        console.log(event);
+        submit(event.currentTarget, { replace: false });
+    }
 
     return (
         <div className="bg-gray-900 min-h-screen">
@@ -142,8 +185,12 @@ export default function Index() {
                                 <fieldset className="space-y-5 pt-4">
                                     {data.tasks.map((task) => (
                                         <div key={task.id} className="relative flex items-start">
-                                            <div className="flex items-center h-5 mt-1">
-                                                <input id="comments" aria-describedby="comments-description" name="comments" type="checkbox" className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"/>
+                                            <div className="flex items-center h-5 mt-2">
+                                                {/*<Form method='put' onChange={handleChange}>*/}
+                                                {/*    <label>*/}
+                                                        <input name="task_id" value={task.id} checked={ task.is_completed ? 'checked' : '' } onChange={e => {}} type="checkbox" className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"/>
+                                                {/*    </label>*/}
+                                                {/*</Form>*/}
                                             </div>
                                             <div className="ml-3 text-xl">
                                                 <span id="comments-description" className={`text-white text-base ${task.is_completed == true ? 'line-through' : ''}`}>{task.title} </span>

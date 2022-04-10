@@ -1,6 +1,6 @@
-# Welcome to Remix!
+## Welcome to Remix Starter!
 
-- [Remix Docs](https://remix.run/docs)
+Remix starter application using Tailwind CSS and Prisma to connect to PlanetScale.
 
 ## Deployment
 
